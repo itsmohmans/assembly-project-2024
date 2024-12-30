@@ -26,6 +26,8 @@ display_welcome:
 mov cl, 0                   ; stores if 2 players are ready
 ; capture keyboard input
 wait_for_ready:
+  cmp cl, 2               ; is both players ready?
+  je start_game
   mov ah, 00h
   int 16h
   cmp al, 'a'
