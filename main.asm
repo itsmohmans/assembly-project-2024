@@ -3,17 +3,17 @@
 org 100h
 
 .data
-p1_health  dw 5
-p2_health  dw 5
-health_str      db "HEALTH"
+p1_health       db 5
+p2_health       db 5
+health_str      db "HEALTH", 0h
 welcome_str     db "Press `a` if Player 1 is ready, Press arrow up if Player 2 is ready", 0h
-ready_str       db 0ah, 0dh, "player ", 01h, " ready", 00h
+ready_str       db 0ah, 0dh, "player ", 01h, " ready", 00h ; 01h is just a placeholder
 
 .code
 mov ax, @data
 mov ds, ax
 
-; display welcome
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; WELCOME SCREENS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 mov si, 0
 mov ah, 02h
 display_welcome:
@@ -26,14 +26,14 @@ display_welcome:
 mov cl, 0                   ; stores if 2 players are ready
 ; capture keyboard input
 wait_for_ready:
-  cmp cl, 2               ; is both players ready?
+  cmp cl, 2                 ; is both players ready?
   je start_game
   mov ah, 00h
   int 16h
   cmp al, 'a'
   je p1_ready
 
-  cmp ah, 48h                 ; up arrow
+  cmp ah, 48h               ; up arrow
   je p2_ready
 
   jmp wait_for_ready
@@ -57,8 +57,8 @@ print_ready_loop:
   cmp dl, 01h
   jne print_char
   
-  mov dl, ch              ; print current ready player in the placeholder
-  add dl, 30h             ; convert to ascii
+  mov dl, ch                ; print current ready player in the placeholder
+  add dl, 30h               ; convert to ascii
   jmp print_char
 
 print_char:
@@ -73,15 +73,20 @@ go_back:
   ret
 
 check_ready_status:
-  cmp cl, 2               ; is both players ready?
+  cmp cl, 2                 ; is both players ready?
   je start_game
   inc cl
   jmp wait_for_ready
 
 start_game:
   mov ah, 00h
-  mov al, 03h
+  mov al, 03h               ; for 80x25 terminal/vid mode
   int 10h                   ; clear screen
+
+; registers used so far:
+; cl: to store # of ready players (unneeded now)
+; ch: to store which player is ready (unneeded now)
+; ah, al, dl: for interrupt-related operations
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INTERFACE SETUP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
