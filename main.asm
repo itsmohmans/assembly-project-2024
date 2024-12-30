@@ -83,16 +83,61 @@ start_game:
   mov al, 03h
   int 10h                   ; clear screen
 
-;draw health bars
-; mov cx, p1_health
-; mov ah,02h
-; mov dl, '*'
-; mov bx, 10                ; p1 health position
-; int 21h
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INTERFACE SETUP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; push cx                   ; save remaining health
-; mov cx, bx                ; set cursor position
-; mov ah, 02h          
+; draw player 1 health bar
+mov cl, p1_health
+mov dl, 0                   ; starting from col 0
+mov dh, 0                   ; row = 0
+call draw_horizontal_bar
+mov dx, 0
+call write_health
+
+; draw player 2 health bar
+mov cl, p2_health
+mov dl, 65                  ; starts at col 65
+mov dh, 0
+call draw_horizontal_bar
+mov dl, 65
+mov dh, 0
+call write_health
+
+; draw horizontal (health) bars
+; cx = number of block to write
+; dl = column
+; dh = row
+draw_horizontal_bar:
+  add dl, 7           ; shift by the # of chars in "health"
+  mov ah, 02h         ; interrupt for setting cursor position
+  mov bh, 0           ; page 0 (from assembly help docs)
+  int 10h
+  ; push dx           ; save the orignial position [update: the whole program freaks out when I use this]
+  mov ah, 09h         ; write character and attribute at cursor position
+  mov al, '*'         ; char to write
+  mov bl, 0Fh         ; white text attr
+  mov ch, 0           ; cl has the health count, setting ch to 0 so that cx = count of '*' character
+  int 10h
+  inc dl              ; next col
+  ret
+
+; print "health" string
+write_health:
+  mov si, 0
+  ; pop dx                  ; restore dx value
+  write_health_loop:
+    mov ah, 02h               ; for cursor position
+    mov bh, 0                 ; page 0
+    int 10h
+    mov ah, 09h
+    mov al, health_str[si]
+    mov bl, 0fh
+    mov cx, 1               ; count of each character
+    int 10h
+    inc dl                  ; next col
+    inc si
+    cmp health_str[si], 0h
+    jnz write_health_loop
+  ret
 
 jmp $                       ; infinity loop
 
