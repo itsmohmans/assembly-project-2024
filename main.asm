@@ -107,6 +107,30 @@ mov dl, 65
 mov dh, 0
 call write_health
 
+
+; ------------- draw the wall -----------------
+mov di, 25                  ; height
+mov dl, 40                  ; starts at column 40
+mov dh, 0                   ; row 0
+mov cx, 1                   ; print 1 block (width)
+mov bl, 0Eh                 ; color = yellow
+call draw_vertical_block
+
+
+
+; ---------------------------------------------
+
+; ------------- draw the wall -----------------
+mov di, 25                  ; height
+mov dl, 40                  ; starts at column 40
+mov dh, 0                   ; row 0
+mov cx, 1                   ; print 1 block (width)
+mov bl, 0Eh                 ; color = yellow
+call draw_vertical_block
+
+
+
+; ---------------------------------------------
 ; draw horizontal (health) bars
 ; cx = number of block to write
 ; dl = column
@@ -142,6 +166,26 @@ write_health:
     inc si
     cmp health_str[si], 0h
     jnz write_health_loop
+  ret
+
+
+; draw a vertical block, can be used for the wall, the moving wall hole, or players blocks
+; cx = width
+; dl = starting col
+; dh = starting row
+; di = max rows (aka height)
+; bl = char attribute (color)
+draw_vertical_block:
+  mov bh, 0
+vertical_block_loop:
+  mov ah, 02h
+  int 10h
+  mov ah, 09h
+  mov al, block
+  int 10h
+  inc dh                    ; go to the next row
+  dec di                    ; counter for the height
+  jnz vertical_block_loop
   ret
 
 jmp $                       ; infinity loop
