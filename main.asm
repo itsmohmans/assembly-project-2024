@@ -8,6 +8,7 @@ p2_health       db 5
 health_str      db "HEALTH", 0h
 welcome_str     db "Press `a` if Player 1 is ready, Press arrow up if Player 2 is ready", 0h
 ready_str       db 0ah, 0dh, "player ", 01h, " ready", 00h ; 01h is just a placeholder
+block           db 219          ; ascii for a block
 
 .code
 mov ax, @data
@@ -107,18 +108,22 @@ mov dl, 65
 mov dh, 0
 call write_health
 
-
-; ------------- draw the wall -----------------
-mov di, 25                  ; height
-mov dl, 40                  ; starts at column 40
-mov dh, 0                   ; row 0
-mov cx, 1                   ; print 1 block (width)
-mov bl, 0Eh                 ; color = yellow
+; ------------ draw players blocks ------------
+; player 1 block
+mov dl, 0                   ; col = 0
+mov dh, 7                   ; row = 7
+mov di, 10                  ; height = 10
+mov cx, 5                   ; width = 5
+mov bl, 01h                 ; color = blue
 call draw_vertical_block
 
-
-
-; ---------------------------------------------
+; player 2 block
+mov dl, 75                   ; col = 0
+mov dh, 10                   ; row = 7
+mov di, 10                  ; height = 10
+mov cx, 5                   ; width = 5
+mov bl, 04h                 ; color = red
+call draw_vertical_block
 
 ; ------------- draw the wall -----------------
 mov di, 25                  ; height
