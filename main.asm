@@ -11,7 +11,8 @@ ready_str       db 0ah, 0dh, "player ", 01h, " ready", 00h ; 01h is just a place
 block           db 219          ; ascii for a block
 hole_coords     db 40, 0        ; coordinates of of the hole in the wall (x, y)
 wall_direction  db 1            ; 1 = down, -1 = up
-; player1_coords  db
+player1_coords  db 2 DUP (-1)    ; coordinates of the first  player's bullet
+player2_coords  db 2 DUP (-1)    ; coordinates of the second player's bullet
 
 .code
 mov ax, @data
@@ -143,8 +144,8 @@ call draw_vertical_block
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MAIN GAME LOOP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 main_loop:
   call move_wall
-  ; call check_input
-  ; call move_balls
+  call check_input
+  call move_bullets
   jmp main_loop
 
 
@@ -266,6 +267,101 @@ draw_new_hole:
   mov di, 5                 ; hole height = 5
   mov al, ' '
   call draw_vertical_block
+  ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CHECK INPUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+check_input:
+  mov ah, 01h              ; non-blocking keyboard input
+  int 16h
+  jz no_input              ; no key pressed
+
+  ; TODO: if either bullets' variables are already set, return
+  mov ah, 00h
+  int 16h
+  cmp al, 'a'
+  je fire_player1_bullet
+  cmp ah, 48h               ; check for arrow up key
+  je fire_player2_bullet
+
+no_input:
+  ret
+
+fire_player1_bullet:
+  mov dl, 6                 ; starting col
+  mov dh, 12                ; starting row
+  mov bl, 01h               ; blue
+  mov player1_coords[0], dl
+  mov player1_coords[1], dh
+  call add_bullet
+  ret
+
+fire_player2_bullet:
+  mov dl, 74                ; starting col
+  mov dh, 15                ; starting row
+  mov bl, 04h               ; red
+  mov player2_coords[0], dl
+  mov player2_coords[1], dh
+  call add_bullet
+  ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MOVE BULLET ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+add_bullet:
+  mov cx, 1
+  mov di, 1
+  mov al, block
+  call draw_vertical_block
+  ret
+
+move_bullets:
+  ; TODO:
+  ; if bullet 1 is set, move it
+  ; if bullet 2 is set, move it
+  ; once either finish (pass through or collide), remove it, and reset their vars
+  cmp player1_coords[0], -1
+  jne move_p1_bullet
+
+  move_bullets_p2:
+    cmp player2_coords[0], -1
+    jne move_p2_bullet
+  ret
+
+move_p1_bullet:
+  ; remove previous block
+  mov dl, player1_coords[0]
+  mov dh, player1_coords[1]
+  mov cx, 1                 ; width
+  mov di, 1                 ; height
+  mov al, ' '
+  call draw_vertical_block
+  
+  inc dl
+  mov player1_coords[0], dl
+  mov dh, player1_coords[1]
+  mov al, block
+  mov bl, 01h               ; red
+  mov di, 1
+  call draw_vertical_block
+  ; TODO: check for collision with the wall or its hole
+  jmp move_bullets_p2
+
+move_p2_bullet:
+  ; remove previous block
+  mov dl, player2_coords[0]
+  mov dh, player2_coords[1]
+  mov cx, 1                 ; width
+  mov di, 1                 ; height
+  mov al, ' '
+  call draw_vertical_block
+  
+  dec dl
+  mov player2_coords[0], dl
+  mov dh, player2_coords[1]
+  mov al, block
+  mov bl, 04h               ; red
+  mov di, 1
+  mov cx, 1
+  call draw_vertical_block
+  ; TODO: check for collision
   ret
 
 jmp $                       ; infinity loop
