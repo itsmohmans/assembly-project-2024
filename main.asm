@@ -9,6 +9,9 @@ health_str      db "HEALTH", 0h
 welcome_str     db "Press `a` if Player 1 is ready, Press arrow up if Player 2 is ready", 0h
 ready_str       db 0ah, 0dh, "player ", 01h, " ready", 00h ; 01h is just a placeholder
 block           db 219          ; ascii for a block
+hole_coords     db 40, 0        ; coordinates of of the hole in the wall (x, y)
+wall_direction  db 1            ; 1 = down, -1 = up
+; player1_coords  db
 
 .code
 mov ax, @data
@@ -134,8 +137,16 @@ mov bl, 0Eh                 ; color = yellow
 call draw_vertical_block
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MAIN GAME LOOP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+main_loop:
+  call move_wall           ; Continuously move the wall
+  ; call check_input         ; Handle player input
+  ; call move_balls          ; Process ball movement and collisions
+  jmp main_loop            ; Repeat the loop
 
-; ---------------------------------------------
+
+
+; --------------------------------------------------------------------------
 ; draw horizontal (health) bars
 ; cx = number of block to write
 ; dl = column
@@ -174,7 +185,7 @@ write_health:
   ret
 
 
-; draw a vertical block, can be used for the wall, the moving wall hole, or players blocks
+; draw a vertical block, used for the wall, the moving wall hole, or players blocks
 ; cx = width
 ; dl = starting col
 ; dh = starting row
@@ -193,5 +204,62 @@ vertical_block_loop:
   jnz vertical_block_loop
   ret
 
-jmp $                       ; infinity loop
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; WALL MOVEMENT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+move_wall:
+  ; erase the previous hole block with yellow wall
+  mov dl, hole_coords[0]
+  mov dh, hole_coords[1]
+  
+  cmp wall_direction, -1
+  je cover_bottom_wall
+  mov cx, 1                       ; width and height = 1
+  mov di, 1
+  mov bl, 0Eh                     ; yellow
+  call draw_vertical_block
 
+cover_bottom_wall:
+  add dh, 5
+  mov cx, 1                       ; width and height = 1
+  mov di, 1
+  mov bl, 0Eh                     ; yellow
+  call draw_vertical_block
+
+  ; update wall position
+  mov al, wall_direction
+  add hole_coords[1], al          ; move up or down
+  cmp al, 1                       ; if it's moving down
+  jne check_top
+  call check_bottom
+
+  jmp draw_new_hole
+
+check_bottom:
+  cmp hole_coords[1], 22          ; check if reached bottom. TODO: change it to 20?
+  je set_hole_dir_up
+  ret
+
+set_hole_dir_up:
+  mov wall_direction, -1          ; change hole move direction to up
+  ret
+
+set_hole_dir_down:
+  mov wall_direction, 1
+  mov hole_coords[1], 1           ; reset starting coords
+  ret
+
+check_top:
+  mov ah, hole_coords[1]
+  cmp hole_coords[1], 0           ; check if reached top
+  jbe set_hole_dir_down
+  jmp draw_new_hole
+
+draw_new_hole:
+  mov dl, hole_coords[0]
+  mov dh, hole_coords[1]
+  mov bl, 00h                     ; black block
+  mov cx, 1
+  mov di, 5                       ; hole height = 5
+  call draw_vertical_block
+  ret
+
+jmp $                             ; infinity loop
