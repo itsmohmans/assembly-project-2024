@@ -118,14 +118,16 @@ mov dh, 7                   ; row = 7
 mov di, 10                  ; height = 10
 mov cx, 5                   ; width = 5
 mov bl, 01h                 ; color = blue
+mov al, block
 call draw_vertical_block
 
 ; player 2 block
-mov dl, 75                   ; col = 0
-mov dh, 10                   ; row = 7
+mov dl, 75                  ; col = 0
+mov dh, 10                  ; row = 7
 mov di, 10                  ; height = 10
 mov cx, 5                   ; width = 5
 mov bl, 04h                 ; color = red
+mov al, block
 call draw_vertical_block
 
 ; ------------- draw the wall -----------------
@@ -134,15 +136,16 @@ mov dl, 40                  ; starts at column 40
 mov dh, 0                   ; row 0
 mov cx, 1                   ; print 1 block (width)
 mov bl, 0Eh                 ; color = yellow
+mov al, block
 call draw_vertical_block
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MAIN GAME LOOP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 main_loop:
-  call move_wall           ; Continuously move the wall
-  ; call check_input         ; Handle player input
-  ; call move_balls          ; Process ball movement and collisions
-  jmp main_loop            ; Repeat the loop
+  call move_wall
+  ; call check_input
+  ; call move_balls
+  jmp main_loop
 
 
 
@@ -152,17 +155,17 @@ main_loop:
 ; dl = column
 ; dh = row
 draw_horizontal_bar:
-  add dl, 7           ; shift by the # of chars in "health"
-  mov ah, 02h         ; interrupt for setting cursor position
-  mov bh, 0           ; page 0 (from assembly help docs)
+  add dl, 7                 ; shift by the # of chars in "health"
+  mov ah, 02h               ; interrupt for setting cursor position
+  mov bh, 0                 ; page 0 (from assembly help docs)
   int 10h
-  ; push dx           ; save the orignial position [update: the whole program freaks out when I use this]
-  mov ah, 09h         ; write character and attribute at cursor position
-  mov al, '*'         ; char to write
-  mov bl, 0Fh         ; white text attr
-  mov ch, 0           ; cl has the health count, setting ch to 0 so that cx = count of '*' character
+  ; push dx                 ; save the orignial position [update: the whole program freaks out when I use this]
+  mov ah, 09h               ; write character and attribute at cursor position
+  mov al, '*'               ; char to write
+  mov bl, 0Fh               ; white text attr
+  mov ch, 0                 ; cl has the health count, setting ch to 0 so that cx = count of '*' character
   int 10h
-  inc dl              ; next col
+  inc dl                    ; next col
   ret
 
 ; print "health" string
@@ -170,8 +173,8 @@ write_health:
   mov si, 0
   ; pop dx                  ; restore dx value
   write_health_loop:
-    mov ah, 02h               ; for cursor position
-    mov bh, 0                 ; page 0
+    mov ah, 02h             ; for cursor position
+    mov bh, 0               ; page 0
     int 10h
     mov ah, 09h
     mov al, health_str[si]
@@ -197,7 +200,7 @@ vertical_block_loop:
   mov ah, 02h
   int 10h
   mov ah, 09h
-  mov al, block
+  ; mov al, block
   int 10h
   inc dh                    ; go to the next row
   dec di                    ; counter for the height
@@ -212,54 +215,57 @@ move_wall:
   
   cmp wall_direction, -1
   je cover_bottom_wall
-  mov cx, 1                       ; width and height = 1
+  mov cx, 1                 ; width and height = 1
   mov di, 1
-  mov bl, 0Eh                     ; yellow
+  mov bl, 0Eh               ; yellow
+  mov al, block
   call draw_vertical_block
 
 cover_bottom_wall:
   add dh, 5
-  mov cx, 1                       ; width and height = 1
+  mov cx, 1                 ; width and height = 1
   mov di, 1
-  mov bl, 0Eh                     ; yellow
+  mov bl, 0Eh               ; yellow
+  mov al, block
   call draw_vertical_block
 
   ; update wall position
   mov al, wall_direction
-  add hole_coords[1], al          ; move up or down
-  cmp al, 1                       ; if it's moving down
+  add hole_coords[1], al    ; move up or down
+  cmp al, 1                 ; if it's moving down
   jne check_top
   call check_bottom
 
   jmp draw_new_hole
 
 check_bottom:
-  cmp hole_coords[1], 22          ; check if reached bottom. TODO: change it to 20?
+  cmp hole_coords[1], 22    ; check if reached bottom. TODO: change it to 20?
   je set_hole_dir_up
   ret
 
 set_hole_dir_up:
-  mov wall_direction, -1          ; change hole move direction to up
+  mov wall_direction, -1    ; change hole move direction to up
   ret
 
 set_hole_dir_down:
   mov wall_direction, 1
-  mov hole_coords[1], 1           ; reset starting coords
+  mov hole_coords[1], 1     ; reset starting coords
   ret
 
 check_top:
   mov ah, hole_coords[1]
-  cmp hole_coords[1], 0           ; check if reached top
+  cmp hole_coords[1], 0     ; check if reached top
   jbe set_hole_dir_down
   jmp draw_new_hole
 
 draw_new_hole:
   mov dl, hole_coords[0]
   mov dh, hole_coords[1]
-  mov bl, 00h                     ; black block
+  mov bl, 00h               ; black block
   mov cx, 1
-  mov di, 5                       ; hole height = 5
+  mov di, 5                 ; hole height = 5
+  mov al, ' '
   call draw_vertical_block
   ret
 
-jmp $                             ; infinity loop
+jmp $                       ; infinity loop
