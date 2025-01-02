@@ -269,7 +269,7 @@ draw_new_hole:
   call draw_vertical_block
   ret
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CHECK INPUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CHECK INPUT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 check_input:
   mov ah, 01h              ; non-blocking keyboard input
   int 16h
@@ -319,19 +319,17 @@ add_bullet:
 
 move_bullets:
   ; TODO:
-  ; if bullet 1 is set, move it
-  ; if bullet 2 is set, move it
   ; once either finish (pass through or collide), remove it, and reset their vars
-  cmp player1_coords[0], -1
+  cmp player1_coords[0], -1     ; if bullet 1 is fired, move it
   jne move_p1_bullet
 
   move_bullets_p2:
-    cmp player2_coords[0], -1
+    cmp player2_coords[0], -1   ; if bullet 2 is fired, move it
     jne move_p2_bullet
   ret
 
 move_p1_bullet:
-  ; remove previous block
+  ; remove previous bullet block
   mov dl, player1_coords[0]
   mov dh, player1_coords[1]
   mov cx, 1                 ; width
@@ -342,11 +340,22 @@ move_p1_bullet:
   inc dl
   mov player1_coords[0], dl
   mov dh, player1_coords[1]
+  
+  ; check for collision
+  mov ah, 2
+  mov bh, 0
+  int 10h                   ; set cursor position to current bullet's position
+  mov ah, 08h
+  int 10h                   ; read char and attr at cursor position
+  cmp dl, 40
+  je p1_collides
+  
+  ; else if next block is not a wall
   mov al, block
   mov bl, 01h               ; red
   mov di, 1
+  mov cx, 1
   call draw_vertical_block
-  ; TODO: check for collision with the wall or its hole
   jmp move_bullets_p2
 
 move_p2_bullet:
@@ -361,12 +370,77 @@ move_p2_bullet:
   dec dl
   mov player2_coords[0], dl
   mov dh, player2_coords[1]
+
+  ; check for collision
+  mov ah, 2
+  mov bh, 0
+  int 10h                   ; set cursor position to current bullet's position
+  mov ah, 08h
+  int 10h                   ; read char and attr at cursor position
+  cmp dl, 40                ; if the bullet reaches col=40
+  je p2_collides
+
+  ; else if next block is not a wall
   mov al, block
   mov bl, 04h               ; red
   mov di, 1
   mov cx, 1
   call draw_vertical_block
-  ; TODO: check for collision
+
   ret
 
-jmp $                       ; infinity loop
+p1_collides:
+  cmp al, ' '               ; if it's a black block, then it went through the wall
+  je p1_went_through
+  ; otherwise:
+  dec p1_health
+  call reset_p1_bullet
+  ; TODO: update health bar
+  jmp main_loop
+
+p2_collides:
+  cmp al, ' '               ; if it's a black block, it went through the wall
+  je p2_went_through
+  ; otherwise:
+  dec p2_health
+  call reset_p2_bullet
+  ; TODO: update health bar
+  jmp main_loop
+
+p1_went_through:
+  dec p2_health
+  call reset_p1_bullet
+  ; TODO: update health bar
+  jmp main_loop
+
+p2_went_through:
+  dec p1_health
+  call reset_p2_bullet
+  ; TODO: update health bar
+  jmp main_loop
+
+reset_p1_bullet:
+  mov dl, player1_coords[0]
+  mov dh, player1_coords[1]
+  mov cx, 1                 ; width
+  mov di, 1                 ; height
+  mov al, block
+  mov bl, 00h
+  call draw_vertical_block
+  mov player1_coords[0], -1
+  mov player1_coords[1], -1
+  ret
+reset_p2_bullet:
+  mov dl, player2_coords[0]
+  mov dh, player2_coords[1]
+  mov cx, 1                 ; width
+  mov di, 1                 ; height
+  mov al, block
+  mov bl, 00h
+  call draw_vertical_block
+  mov player2_coords[0], -1
+  mov player2_coords[1], -1
+  ret
+
+end:
+  jmp $                       ; infinity loop
