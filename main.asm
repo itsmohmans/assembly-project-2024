@@ -1,5 +1,8 @@
 ; Mohamed Mansour 20210088
 
+; use `git log -p` to check the project history and progress.
+; or check it out on my github: https://github.com/itsmohmans/assembly-project-2024.git (private, email me for access)
+
 org 100h
 
 .data
