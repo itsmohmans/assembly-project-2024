@@ -87,6 +87,11 @@ start_game:
   mov ah, 00h
   mov al, 03h               ; for 80x25 terminal/vid mode
   int 10h                   ; clear screen
+  ; reset health and bullets positions
+  mov p1_health, 5
+  mov p2_health, 5
+  call reset_p1_bullet
+  call reset_p2_bullet
 
 ; registers used so far:
 ; cl: to store # of ready players (unneeded now)
@@ -122,6 +127,8 @@ update_p1_health:
   mov al, '*'                 ; health char
   mov bl, 0Fh                 ; white text
   call draw_horizontal_bar
+  cmp p1_health, 0
+  jz start_game
   ret
 
 ; draw player 2 health bar
@@ -139,6 +146,8 @@ update_p2_health:
   mov al, '*'                 ; health char
   mov bl, 0Fh                 ; white text
   call draw_horizontal_bar
+  cmp p2_health, 0
+  jz start_game
   ret
 
 ; ------------ draw players blocks ------------
@@ -268,7 +277,7 @@ cover_bottom_wall:
   jmp draw_new_hole
 
 check_bottom:
-  cmp hole_coords[1], 22    ; check if reached bottom. TODO: change it to 20?
+  cmp hole_coords[1], 22    ; check if reached bottom.
   je set_hole_dir_up
   ret
 
