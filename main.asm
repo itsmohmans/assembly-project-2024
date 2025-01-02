@@ -95,41 +95,71 @@ start_game:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INTERFACE SETUP ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; draw player 1 health bar
-mov cl, p1_health
-mov dl, 0                   ; starting from col 0
-mov dh, 0                   ; row = 0
-call draw_horizontal_bar
 mov dx, 0
 call write_health
-
-; draw player 2 health bar
-mov cl, p2_health
-mov dl, 65                  ; starts at col 65
-mov dh, 0
-call draw_horizontal_bar
 mov dl, 65
 mov dh, 0
 call write_health
 
+call update_p1_health
+call update_p2_health
+jmp draw_players_blocks
+
+; draw player 1 health bar
+update_p1_health:
+  mov dl, 0                   ; starting from col 0
+  add dl, 7                   ; shift by the # of chars in "health"
+  mov dh, 0                   ; row = 0
+
+  ; remove old health bar
+  mov al, block
+  mov bl, 00h
+  mov cl, 5
+  call draw_horizontal_bar
+
+  ; add updated health bar
+  mov cl, p1_health
+  mov al, '*'                 ; health char
+  mov bl, 0Fh                 ; white text
+  call draw_horizontal_bar
+  ret
+
+; draw player 2 health bar
+update_p2_health:
+  mov dl, 65                  ; starts at col 65
+  add dl, 7                   ; shift by the # of chars in "health"
+  mov dh, 0
+  
+  mov al, block
+  mov bl, 00h
+  mov cl, 5
+  call draw_horizontal_bar
+
+  mov cl, p2_health
+  mov al, '*'                 ; health char
+  mov bl, 0Fh                 ; white text
+  call draw_horizontal_bar
+  ret
+
 ; ------------ draw players blocks ------------
 ; player 1 block
-mov dl, 0                   ; col = 0
-mov dh, 7                   ; row = 7
-mov di, 10                  ; height = 10
-mov cx, 5                   ; width = 5
-mov bl, 01h                 ; color = blue
-mov al, block
-call draw_vertical_block
+draw_players_blocks:
+  mov dl, 0                   ; col = 0
+  mov dh, 7                   ; row = 7
+  mov di, 10                  ; height = 10
+  mov cx, 5                   ; width = 5
+  mov bl, 01h                 ; color = blue
+  mov al, block
+  call draw_vertical_block
 
-; player 2 block
-mov dl, 75                  ; col = 0
-mov dh, 10                  ; row = 7
-mov di, 10                  ; height = 10
-mov cx, 5                   ; width = 5
-mov bl, 04h                 ; color = red
-mov al, block
-call draw_vertical_block
+  ; player 2 block
+  mov dl, 75                  ; col = 0
+  mov dh, 10                  ; row = 7
+  mov di, 10                  ; height = 10
+  mov cx, 5                   ; width = 5
+  mov bl, 04h                 ; color = red
+  mov al, block
+  call draw_vertical_block
 
 ; ------------- draw the wall -----------------
 mov di, 25                  ; height
@@ -155,18 +185,16 @@ main_loop:
 ; cx = number of block to write
 ; dl = column
 ; dh = row
+; al = character to write
+; bl = attribute / color
 draw_horizontal_bar:
-  add dl, 7                 ; shift by the # of chars in "health"
   mov ah, 02h               ; interrupt for setting cursor position
-  mov bh, 0                 ; page 0 (from assembly help docs)
+  mov bh, 0                 ; page 0 (check assembly help docs)
   int 10h
   ; push dx                 ; save the orignial position [update: the whole program freaks out when I use this]
   mov ah, 09h               ; write character and attribute at cursor position
-  mov al, '*'               ; char to write
-  mov bl, 0Fh               ; white text attr
-  mov ch, 0                 ; cl has the health count, setting ch to 0 so that cx = count of '*' character
+  mov ch, 0                 ; cl has the health count, setting ch to 0 so that cx = count of '*' characters
   int 10h
-  inc dl                    ; next col
   ret
 
 ; print "health" string
@@ -318,8 +346,6 @@ add_bullet:
   ret
 
 move_bullets:
-  ; TODO:
-  ; once either finish (pass through or collide), remove it, and reset their vars
   cmp player1_coords[0], -1     ; if bullet 1 is fired, move it
   jne move_p1_bullet
 
@@ -394,8 +420,8 @@ p1_collides:
   je p1_went_through
   ; otherwise:
   dec p1_health
+  call update_p1_health
   call reset_p1_bullet
-  ; TODO: update health bar
   jmp main_loop
 
 p2_collides:
@@ -403,20 +429,20 @@ p2_collides:
   je p2_went_through
   ; otherwise:
   dec p2_health
+  call update_p2_health
   call reset_p2_bullet
-  ; TODO: update health bar
   jmp main_loop
 
 p1_went_through:
   dec p2_health
+  call update_p2_health
   call reset_p1_bullet
-  ; TODO: update health bar
   jmp main_loop
 
 p2_went_through:
   dec p1_health
+  call update_p1_health
   call reset_p2_bullet
-  ; TODO: update health bar
   jmp main_loop
 
 reset_p1_bullet:
@@ -443,4 +469,4 @@ reset_p2_bullet:
   ret
 
 end:
-  jmp $                       ; infinity loop
+  jmp $                     ; infinity loop
