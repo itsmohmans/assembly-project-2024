@@ -275,7 +275,6 @@ check_input:
   int 16h
   jz no_input              ; no key pressed
 
-  ; TODO: if either bullets' variables are already set, return
   mov ah, 00h
   int 16h
   cmp al, 'a'
@@ -287,6 +286,9 @@ no_input:
   ret
 
 fire_player1_bullet:
+  cmp player1_coords[0], -1 ; if the var is set (there's already a bullet), return
+  jne no_input
+
   mov dl, 6                 ; starting col
   mov dh, 12                ; starting row
   mov bl, 01h               ; blue
@@ -296,6 +298,9 @@ fire_player1_bullet:
   ret
 
 fire_player2_bullet:
+  cmp player2_coords[0], -1 ; if the var is set, return
+  jne no_input
+
   mov dl, 74                ; starting col
   mov dh, 15                ; starting row
   mov bl, 04h               ; red
